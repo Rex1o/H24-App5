@@ -42,10 +42,21 @@ public class DescenteRecursive {
     public ElemAST E(){
         ElemAST n1 = T();
 
-        if(currentTerminal.isOperator){
-            currentTerminal = al.prochainTerminal();
+        // +-
+        if(currentTerminal.getType() == Terminal.Type.Addition ||
+                currentTerminal.getType() == Terminal.Type.Soustraction){
+            Terminal operator = currentTerminal;
+            if(al.resteTerminal()) {
+                currentTerminal = al.prochainTerminal();
+            }
+            else{
+                throw new ErreurSynth("Operande manquante dans l'expression : (" + n1.LectAST() + ")" + currentTerminal.getChaine() + "[Manquant]");
+            }
             ElemAST n2 = E();
-            n1 = new NoeudAST(currentTerminal, n1, n2);
+            n1 = new NoeudAST(operator, n1, n2);
+        }
+        else{
+            throw new ErreurSynth("Deux operandes de suite ne sont pas valide : " + n1.LectAST() + " " + currentTerminal.getChaine());
         }
 
         return n1;
@@ -54,30 +65,63 @@ public class DescenteRecursive {
     public ElemAST T(){
         ElemAST n1 = F();
 
-        if(currentTerminal.isOperator){
-            currentTerminal = al.prochainTerminal();
+        // * /
+        if(currentTerminal.getType() == Terminal.Type.Division ||
+                currentTerminal.getType() == Terminal.Type.Multiplication){
+            Terminal operator = currentTerminal;
+            if(al.resteTerminal()) {
+                currentTerminal = al.prochainTerminal();
+            }
+            else{
+                throw new ErreurSynth("Operande manquante dans l'expression : (" + n1.LectAST() + ")" + currentTerminal.getChaine() + "[Manquant]");
+            }
             ElemAST n2 = T();
-            n1 = new NoeudAST(currentTerminal, n1, n2);
+            n1 = new NoeudAST(operator, n1, n2);
+        }
+        // +- )
+        else if(currentTerminal.getType() == Terminal.Type.Addition ||
+                currentTerminal.getType() == Terminal.Type.Soustraction ||
+                currentTerminal.getType() == Terminal.Type.ParentheseFermante){
+            return n1;
+        }
+        else{
+            throw new ErreurSynth("Deux operandes de suite ne sont pas valide : " + n1.LectAST() + " " + currentTerminal.getChaine());
         }
 
         return n1;
     }
 
-
     public ElemAST F(){
         ElemAST n;
-        if(!currentTerminal.isOperator){
+        if(currentTerminal.getType() == Terminal.Type.Nombre ||
+                currentTerminal.getType() == Terminal.Type.Identificateur){
             n = new FeuilleAST(currentTerminal);
+            if(al.resteTerminal()){
+                currentTerminal = al.prochainTerminal();
+            }
         }
-        else if(currentTerminal.isOperator && currentTerminal.chaine == "("){
-
-
+        else if(currentTerminal.getChaine().equals("(")){
+            if(al.resteTerminal()) {
+                currentTerminal = al.prochainTerminal();
+            }
+            else{
+                throw new ErreurSynth("Paranthese ouvrante sans etre ferme");
+            }
+            n = E();
+            if(currentTerminal.getChaine().equals(")")){
+                if(al.resteTerminal()) {
+                    currentTerminal = al.prochainTerminal();
+                }
+            }
+            else{
+                throw new ErreurSynth(") manquante");
+            }
         }
         else{
-            throw new ErreurSynth("Erreur de syntaxe : Absence de ( ou d'un identificateur au traitement de : " + currentTerminal.chaine);
+            throw new ErreurSynth("Erreur de syntaxe : Absence de ( ou d'un identificateur au traitement de : " + currentTerminal.getChaine());
         }
 
-        return new FeuilleAST(new Terminal("")); // TODO changer ca
+        return n;
     }
 
 
