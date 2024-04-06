@@ -57,4 +57,8 @@ public class Terminal {
             default -> throw new RuntimeException(String.format("Caractère '%c' non supporté comme opérateur", c));
         };
     }
+
+    public String toString(){
+        return STR."\{type.name()} \{chaine}";
+    }
 }

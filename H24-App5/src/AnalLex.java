@@ -18,7 +18,7 @@ public class AnalLex {
 
     public String data;
     private int cursor;
-    private State state;
+    private State currentState, nextState;
     private final StringBuilder sb; // Plus rapide que concat des strings
 
     /**
@@ -27,10 +27,10 @@ public class AnalLex {
     public AnalLex(String data) {  // arguments possibles
         this.data = data;
         this.cursor = 0;
-        this.state = State.A;
+        this.currentState = State.A;
+        this.nextState = State.A;
         this.sb = new StringBuilder();
     }
-
 
     /**
      * resteTerminal() retourne :
@@ -48,92 +48,84 @@ public class AnalLex {
      */
     public Terminal prochainTerminal() {
         sb.setLength(0);
-        while (cursor < data.length()) {
-            char c = data.charAt(cursor);
+        int startingCursor = cursor;
+        boolean endOfTerminal = false;
+        char c = 0;
 
-            switch (state) {
+        while (cursor < data.length() && !endOfTerminal) {
+            c = data.charAt(cursor);
+            currentState = nextState;
+
+            switch (currentState) {
                 case State.A:
-                    // 90 = 'Z', 64 = 'A' en ASCII
-                    if (c <= 90 && c >= 64) {
-                        sb.append(c);
-                        cursor++;
-                        state = State.B;
-
-                    } else if (c <= 57 && c >= 48) { // 57 = '9', 48 = '0'
-                        sb.append(c);
-                        cursor++;
-                        state = State.D;
-                    } else if (c == '+' || c == '-' || c == '/' || c == '*' || c == '(' || c == ')') {
-                        sb.append(c);
-                        cursor++;
-                        state = State.E;
-                    } else {
-                        throw new  ErreurLex(String.format("Caractère non '%c' non supporté à la col: %d",c ,cursor));
-                    }
-                    break;
-                case State.B:
-                    // 90 = Z, 64 = A et 97 = a, z = 122
-                    if (c <= 90 && c >= 64 || c <= 122 && c >= 97) {
-                        sb.append(c);
-                        cursor++;
-                    } else if (c == '_') {
-                        sb.append(c);
-                        cursor++;
-                        state = State.C;
-                    } else
-                        return new Terminal(sb.toString());
-                    break;
-                case State.C:
-                    if (c <= 90 && c >= 64 || c <= 122 && c >= 97) {
-                        sb.append(c);
-                        cursor++;
-                        state = State.B;
-                    } else
-                        throw new ErreurLex(String.format("L'identificateur ne peut pas fini avec le caractère : %c. Voir col : %d", c, cursor));
-                    break;
-                case State.D:
-                    if (c <= 57 && c >= 48) // 57 = '9', 48 = '0'
+                    // Si c faite partie de [A-Z]
+                    if (c <= 90 && c >= 64)
+                        changeStateAndAppend(c, State.B);
+                    else if (c <= 57 && c >= 48) // Si c fait partie de [0-9]
+                        changeStateAndAppend(c, State.D);
+                    else if (c == '+' || c == '-' || c == '/' || c == '*' || c == '(' || c == ')') // // Si c est une de ces operandes
+                        changeStateAndAppend(c, State.E);
+                    else if( c == ' ') // Si on obtient un espace, on revient a A, mais on l'ajoute pas au terminal
                         cursor++;
                     else
-                        return new Terminal(sb.toString());
+                        throw new ErreurLex(String.format("Caratère '%c' invalide, voir \"%s\" à la position %d", c, sb.toString() ,cursor));
+                    break;
+                case State.B:
+                    // Si c faite partie de [A-Z] ou [a-z]
+                    if (c <= 90 && c >= 64 || c <= 122 && c >= 97)
+                        changeStateAndAppend(c, State.B);
+                    else if (c == '_')
+                        changeStateAndAppend(c, State.C);
+//                    else if (c <= 57 && c >= 48)  // Si c fait partie de [0-9] //FIXME VOIR LE CAS DE TEST ExceptionChiffreApresLettreIdentificateur
+//                        throw new ErreurLex(String.format("Caratère '%c' invalide, voir \"%s\" à la position %d. Un identificateur ne peut pas contenir de chiffres.",  c, sb.toString() ,cursor));
+                     else{
+                        endOfTerminal = true;
+                        nextState = State.A;
+                    }
+                    break;
+                case State.C:
+                    // Si c faite partie de [A-Z] ou [a-z]
+                    if (c <= 90 && c >= 64 || c <= 122 && c >= 97)
+                        changeStateAndAppend(c ,State.B);
+//                    else if (c <= 57 && c >= 48)  // Si c fait partie de [0-9] //FIXME VOIR LE CAS DE TEST ExceptionChiffreApresUndeScoreIdentificateur
+//                        throw new ErreurLex(String.format("Caratère '%c' invalide, voir \"%s\" à la position %d. Un identificateur ne peut pas contenir de chiffres.",  c, sb.toString() ,cursor));
+                     else
+                        throw new ErreurLex(String.format("Caratère '%c' invalide, voir \"%s\" à la position %d", c, sb.toString() ,cursor));
+                    break;
+                case State.D:
+                    if (c <= 57 && c >= 48)// Si c fait partie de [0-9]
+                        changeStateAndAppend(c, State.D);
+//                    else if (c <= 90 && c >= 64 || c <= 122 && c >= 97) //FIXME VOIR LE CAS DE TEST  ChiffreSuiviLettre
+//                        throw new ErreurLex(String.format("Caratère '%c' invalide, voir \"%s\" à la position %d. Nombre contient un caractère.",  c, sb.toString() ,cursor));
+                    else{
+                        endOfTerminal = true;
+                        nextState = State.A;
+                    }
                     break;
                 case State.E:
-                    return new Terminal(sb.toString());
+                    endOfTerminal = true;
+                    nextState = State.A;
                 default:
                     break;
             }
         }
-        return new Terminal(sb.toString());
-    }
-
-    /**
-     * ErreurLex() envoie un message d'erreur lexicale
-     */
-    public void ErreurLex(String s) {
-        throw new ErreurLex(s);
-    }
-    
-    //Methode principale a lancer pour tester l'analyseur lexical
-    public static void main(String[] args) {
-        String toWrite = "";
-        System.out.println("Debut d'analyse lexicale");
-        if (args.length == 0) {
-            args = new String[2];
-            args[0] = "ExpArith.txt";
-            args[1] = "ResultatLexical.txt";
+        // Cas limite ou le dernier Terminal de la sequence est un identificateur finissant par '_'
+        if (cursor >= data.length() && nextState == State.C){
+            throw new ErreurLex(String.format("Caratère '%c' invalide, voir \"%s\" à la position %d", c, sb.toString() ,cursor));
         }
-        Reader r = new Reader(args[0]);
 
-        AnalLex lexical = new AnalLex(r.toString()); // Creation de l'analyseur lexical
+        return switch (currentState){
+            case State.A -> new Terminal(sb.toString(), startingCursor, sb.charAt(0));// Ce cas arrive quand le dernier terminal est un operateur
+            case State.B -> new Terminal(sb.toString(), startingCursor, Terminal.Type.Identificateur);
+            case State.C -> throw new ErreurLex(String.format("Un identificateur ne peut pas finir par '_', voir \"%s\" à la position %d", sb.toString() ,cursor));
+            case State.D -> new Terminal(sb.toString(), startingCursor, Terminal.Type.Nombre);
+            case State.E -> new Terminal(sb.toString(), startingCursor, sb.charAt(0));
+        };
+    }
 
-        // Execution de l'analyseur lexical
-        Terminal t = null;
-        while (lexical.resteTerminal()) {
-            t = lexical.prochainTerminal();
-            toWrite += t.chaine + "\n";  // toWrite contient le resultat
-        }                   //    d'analyse lexicale
-        System.out.println(toWrite);    // Ecriture de toWrite sur la console
-        Writer w = new Writer(args[1], toWrite); // Ecriture de toWrite dans fichier args[1]
-        System.out.println("Fin d'analyse lexicale");
+    private void changeStateAndAppend(char c, State nextState){
+        cursor++;
+        this.nextState = nextState;
+        sb.append(c);
     }
 }
