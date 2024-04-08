@@ -100,7 +100,7 @@ public class DescenteRecursive {
                 terminal(Terminal.Type.ParentheseFermante);
                 return elem;
             default:
-                throw new ErreurSynth(previousTerminal);
+                throw new ErreurSynth(previousTerminal); // FIXME Specifie que l'erreur est causé parceque on attend un identifieur ou un nombre.
         }
     }
 

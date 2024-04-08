@@ -47,7 +47,6 @@ public class AnalLex {
      */
     public Terminal prochainTerminal() {
         sb.setLength(0);
-        boolean endOfTerminal = false;
         char c = 0;
         Terminal.Type terminaltype;
 
@@ -62,6 +61,7 @@ public class AnalLex {
                         changeStateAndAppend(c, State.D);
                     else if (c == '+' || c == '-' || c == '–' || c == '/' || c == '*' || c == '(' || c == ')') { // // Si c est une de ces operandes
                         changeStateAndAppend(c, State.A);
+                        emptySpaces();
                         return new Terminal(sb.toString(), cursor, sb.charAt(0));
                     } else if (c == ' ') // Si on obtient un espace, on revient a A, mais on l'ajoute pas au terminal
                         cursor++;
@@ -76,8 +76,9 @@ public class AnalLex {
                         changeStateAndAppend(c, State.C);
 //                    else if (c <= 57 && c >= 48)  // Si c fait partie de [0-9] //FIXME VOIR LE CAS DE TEST ExceptionChiffreApresLettreIdentificateur
 //                        throw new ErreurLex(String.format("Caratère '%c' invalide, voir \"%s\" à la position %d. Un identificateur ne peut pas contenir de chiffres.",  c, sb.toString() ,cursor));
-                    else{
+                    else {
                         currentState = State.A;
+                        emptySpaces();
                         return new Terminal(sb.toString(), cursor, Terminal.Type.Identificateur);
                     }
                     break;
@@ -97,6 +98,7 @@ public class AnalLex {
 //                        throw new ErreurLex(String.format("Caratère '%c' invalide, voir \"%s\" à la position %d. Nombre contient un caractère.",  c, sb.toString() ,cursor));
                     else {
                         currentState = State.A;
+                        emptySpaces();
                         return new Terminal(sb.toString(), cursor, Terminal.Type.Nombre);
                     }
                     break;
@@ -106,8 +108,11 @@ public class AnalLex {
             }
         }
 
+
+
+
         // Edge cases dans les cas de fin de lignes
-        if(currentState == State.B)
+        if (currentState == State.B)
             return new Terminal(sb.toString(), cursor, Terminal.Type.Identificateur);
         else if (currentState == State.D)
             return new Terminal(sb.toString(), cursor, Terminal.Type.Nombre);
@@ -119,5 +124,18 @@ public class AnalLex {
         cursor++;
         this.currentState = nextState;
         sb.append(c);
+    }
+
+    private void emptySpaces(){
+        char c;
+        do {
+            if (cursor < data.length()) {
+                c = data.charAt(cursor);
+                if (c == ' ')
+                    cursor++;
+                else break;
+            } else
+                break;
+        } while (c == ' ');
     }
 }

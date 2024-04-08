@@ -59,6 +59,6 @@ public class Terminal {
     }
 
     public String toString(){
-        return STR."\{type.name()} \{chaine}";
+        return type.name() + " " + chaine;
     }
 }

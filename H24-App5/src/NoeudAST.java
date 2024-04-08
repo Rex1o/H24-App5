@@ -33,7 +33,7 @@ public class NoeudAST extends ElemAST {
     }
 
     public String PostFix(){
-        return STR."\{gauche.PostFix()} \{droit.PostFix()} \{terminal.getChaine()}";
+        return gauche.PostFix() +" "+  droit.PostFix() + " "+ terminal.getChaine();
     }
 
     /** Lecture de noeud d'AST
