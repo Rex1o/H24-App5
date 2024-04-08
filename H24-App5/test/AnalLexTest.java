@@ -255,6 +255,20 @@ public class AnalLexTest {
         PrintTerminals(actualValues);
     }
 
+    @Test
+    public void TestGeneral() {
+        // Arrange
+        String testValue = "5+6   + 9 -96 / (5 +3) * ((45+63) +98)";
+        System.out.println(testValue);
+        List<String> expectedValues = Arrays.asList("5", "+", "6","+","9","-","96","/","(","5","+","3",")","*","(","(","45","+","63",")","+","98",")");
+        // Act
+        List<Terminal> actualValues = DoLexicalAnalysis(testValue);
+        // Assert
+        CompareValues(actualValues, expectedValues);
+
+        PrintTerminals(actualValues);
+    }
+
     private void PrintTerminals(List<Terminal> terminals) {
         for (int i = 0; i < terminals.size(); i++) {
             System.out.println(terminals.get(i).toString());

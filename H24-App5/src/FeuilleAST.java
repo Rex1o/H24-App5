@@ -15,7 +15,7 @@ public class FeuilleAST extends ElemAST {
      */
     public int EvalAST( ) {
         if(this.terminal.getType() == Terminal.Type.Identificateur){
-            ErreurEvalAST("Erreur : L'équation contient un Identificateur, elle ne peut donc pas être faite");
+            throw new ErreurEval("Erreur : L'équation contient un Identificateur, elle ne peut donc pas être faite");
         }
 
         return Integer.parseInt(this.terminal.getChaine());

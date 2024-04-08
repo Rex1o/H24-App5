@@ -13,8 +13,10 @@ public class DescenteRecursive {
 
     private void terminal(Terminal.Type attendu) {
         previousTerminal = currentTerminal;
+
         if (currentTerminal.getType() == attendu) {
-            currentTerminal = al.prochainTerminal();
+            if (al.resteTerminal())
+                currentTerminal = al.prochainTerminal();
             currentType = currentTerminal.getType();
         } else
             throw new ErreurSynth(currentTerminal);
