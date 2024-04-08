@@ -100,7 +100,7 @@ public class DescenteRecursive {
                 terminal(Terminal.Type.ParentheseFermante);
                 return elem;
             default:
-                throw new ErreurSynth(previousTerminal); // FIXME Specifie que l'erreur est causé parceque on attend un identifieur ou un nombre.
+                throw new ErreurSynth(String.format("Un indentificateur ou un nombre était attendu, voir \"%s\" à la position %d", previousTerminal.getChaine(), previousTerminal.getPosition()));
         }
     }
 

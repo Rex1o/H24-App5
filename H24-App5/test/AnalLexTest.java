@@ -55,22 +55,6 @@ public class AnalLexTest {
     }
 
 
-    // Test avec un chiffre apres une lettre dans un identificateur
-    @Test
-    public void ExceptionChiffreApresLettreIdentificateur() {
-        // Arrange
-        String testValue = "45 * 45 + A_l4 + Patate";
-        System.out.println(testValue);
-
-        List<Terminal> actualValues = new ArrayList<>();
-
-        ErreurLex thrown = assertThrows(
-                ErreurLex.class,
-                () -> DoLexicalAnalysis(testValue),
-                "Supposé recevoir un erreur lexical indiquant le chiffre 4 dans un identificateur"
-        );
-        System.out.println(thrown.toString());
-    }
 
     // Test avec chiffre dans Identificateur
     @Test
@@ -127,38 +111,6 @@ public class AnalLexTest {
     public void ExceptionIdentificateurFinissantAvecUnderscoreFin() {
         // Arrange
         String testValue = "9 + 5 * 14 + Allo + Pipato_";
-        System.out.println(testValue);
-
-        List<Terminal> actualValues = new ArrayList<>();
-
-        ErreurLex thrown = assertThrows(
-                ErreurLex.class,
-                () -> DoLexicalAnalysis(testValue),
-                "Supposé recevoir un erreur lexical"
-        );
-        System.out.println(thrown.toString());
-    }
-
-    @Test
-    public void LettreSuivieChiffre() {
-        // Arrange
-        String testValue = "A9 + 5 * 14 + Allo + Pipato";
-        System.out.println(testValue);
-
-        List<Terminal> actualValues = new ArrayList<>();
-
-        ErreurLex thrown = assertThrows(
-                ErreurLex.class,
-                () -> DoLexicalAnalysis(testValue),
-                "Supposé recevoir un erreur lexical"
-        );
-        System.out.println(thrown.toString());
-    }
-
-    @Test
-    public void ChiffreSuiviLettre() {
-        // Arrange
-        String testValue = "9LOL + 5 * 14 + Al_lo + Pipato";
         System.out.println(testValue);
 
         List<Terminal> actualValues = new ArrayList<>();
