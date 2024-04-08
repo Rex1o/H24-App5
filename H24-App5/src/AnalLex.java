@@ -18,7 +18,7 @@ public class AnalLex {
 
     public String data;
     private int cursor;
-    private State currentState, nextState;
+    private State currentState;
     private final StringBuilder sb; // Plus rapide que concat des strings
 
     /**
@@ -28,7 +28,6 @@ public class AnalLex {
         this.data = data;
         this.cursor = 0;
         this.currentState = State.A;
-        this.nextState = State.A;
         this.sb = new StringBuilder();
     }
 
@@ -48,14 +47,12 @@ public class AnalLex {
      */
     public Terminal prochainTerminal() {
         sb.setLength(0);
-        int startingCursor = cursor;
         boolean endOfTerminal = false;
         char c = 0;
+        Terminal.Type terminaltype;
 
-        while (cursor < data.length() && !endOfTerminal) {
+        while (cursor < data.length()) {
             c = data.charAt(cursor);
-            currentState = nextState;
-
             switch (currentState) {
                 case State.A:
                     // Si c faite partie de [A-Z]
@@ -63,12 +60,13 @@ public class AnalLex {
                         changeStateAndAppend(c, State.B);
                     else if (c <= 57 && c >= 48) // Si c fait partie de [0-9]
                         changeStateAndAppend(c, State.D);
-                    else if (c == '+' || c == '-' || c == '/' || c == '*' || c == '(' || c == ')') // // Si c est une de ces operandes
-                        changeStateAndAppend(c, State.E);
-                    else if( c == ' ') // Si on obtient un espace, on revient a A, mais on l'ajoute pas au terminal
+                    else if (c == '+' || c == '-' || c == '–' || c == '/' || c == '*' || c == '(' || c == ')') { // // Si c est une de ces operandes
+                        changeStateAndAppend(c, State.A);
+                        return new Terminal(sb.toString(), cursor, sb.charAt(0));
+                    } else if (c == ' ') // Si on obtient un espace, on revient a A, mais on l'ajoute pas au terminal
                         cursor++;
                     else
-                        throw new ErreurLex(String.format("Caratère '%c' invalide, voir \"%s\" à la position %d", c, sb.toString() ,cursor));
+                        throw new ErreurLex(String.format("Caratère '%c' invalide, voir \"%s\" à la position %d", c, sb.toString(), cursor));
                     break;
                 case State.B:
                     // Si c faite partie de [A-Z] ou [a-z]
@@ -78,54 +76,48 @@ public class AnalLex {
                         changeStateAndAppend(c, State.C);
 //                    else if (c <= 57 && c >= 48)  // Si c fait partie de [0-9] //FIXME VOIR LE CAS DE TEST ExceptionChiffreApresLettreIdentificateur
 //                        throw new ErreurLex(String.format("Caratère '%c' invalide, voir \"%s\" à la position %d. Un identificateur ne peut pas contenir de chiffres.",  c, sb.toString() ,cursor));
-                     else{
-                        endOfTerminal = true;
-                        nextState = State.A;
+                    else{
+                        currentState = State.A;
+                        return new Terminal(sb.toString(), cursor, Terminal.Type.Identificateur);
                     }
                     break;
                 case State.C:
                     // Si c faite partie de [A-Z] ou [a-z]
                     if (c <= 90 && c >= 64 || c <= 122 && c >= 97)
-                        changeStateAndAppend(c ,State.B);
+                        changeStateAndAppend(c, State.B);
 //                    else if (c <= 57 && c >= 48)  // Si c fait partie de [0-9] //FIXME VOIR LE CAS DE TEST ExceptionChiffreApresUndeScoreIdentificateur
 //                        throw new ErreurLex(String.format("Caratère '%c' invalide, voir \"%s\" à la position %d. Un identificateur ne peut pas contenir de chiffres.",  c, sb.toString() ,cursor));
-                     else
-                        throw new ErreurLex(String.format("Caratère '%c' invalide, voir \"%s\" à la position %d", c, sb.toString() ,cursor));
+                    else
+                        throw new ErreurLex(String.format("Un identificateur ne peut finir avec un underscore ou en avoir deux de suite, voir \"%s\" à la position %d", sb.toString(), cursor));
                     break;
                 case State.D:
                     if (c <= 57 && c >= 48)// Si c fait partie de [0-9]
                         changeStateAndAppend(c, State.D);
 //                    else if (c <= 90 && c >= 64 || c <= 122 && c >= 97) //FIXME VOIR LE CAS DE TEST  ChiffreSuiviLettre
 //                        throw new ErreurLex(String.format("Caratère '%c' invalide, voir \"%s\" à la position %d. Nombre contient un caractère.",  c, sb.toString() ,cursor));
-                    else{
-                        endOfTerminal = true;
-                        nextState = State.A;
+                    else {
+                        currentState = State.A;
+                        return new Terminal(sb.toString(), cursor, Terminal.Type.Nombre);
                     }
                     break;
                 case State.E:
-                    endOfTerminal = true;
-                    nextState = State.A;
+                    changeStateAndAppend(c, State.A);
                 default:
-                    break;
             }
         }
-        // Cas limite ou le dernier Terminal de la sequence est un identificateur finissant par '_'
-        if (cursor >= data.length() && nextState == State.C){
-            throw new ErreurLex(String.format("Caratère '%c' invalide, voir \"%s\" à la position %d", c, sb.toString() ,cursor));
-        }
 
-        return switch (currentState){
-            case State.A -> new Terminal(sb.toString(), startingCursor, sb.charAt(0));// Ce cas arrive quand le dernier terminal est un operateur
-            case State.B -> new Terminal(sb.toString(), startingCursor, Terminal.Type.Identificateur);
-            case State.C -> throw new ErreurLex(String.format("Un identificateur ne peut pas finir par '_', voir \"%s\" à la position %d", sb.toString() ,cursor));
-            case State.D -> new Terminal(sb.toString(), startingCursor, Terminal.Type.Nombre);
-            case State.E -> new Terminal(sb.toString(), startingCursor, sb.charAt(0));
-        };
+        // Edge cases dans les cas de fin de lignes
+        if(currentState == State.B)
+            return new Terminal(sb.toString(), cursor, Terminal.Type.Identificateur);
+        else if (currentState == State.D)
+            return new Terminal(sb.toString(), cursor, Terminal.Type.Nombre);
+
+        throw new ErreurLex("Cas non supporte par l'anlyseur lexical");
     }
 
-    private void changeStateAndAppend(char c, State nextState){
+    private void changeStateAndAppend(char c, State nextState) {
         cursor++;
-        this.nextState = nextState;
+        this.currentState = nextState;
         sb.append(c);
     }
 }

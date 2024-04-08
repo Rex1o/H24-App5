@@ -110,7 +110,7 @@ public class AnalLexTest {
     @Test
     public void ExceptionIdentificateurFinissantAvecUnderscore() {
         // Arrange
-        String testValue = "All_0o * 45 + A_l_ + Patate";
+        String testValue = "All_ * 45 + Patate";
         System.out.println(testValue);
 
         List<Terminal> actualValues = new ArrayList<>();
@@ -191,6 +191,62 @@ public class AnalLexTest {
         String testValue = "Al_a () +";
         System.out.println(testValue);
         List<String> expectedValues = Arrays.asList("Al_a", "(", ")","+");
+        // Act
+        List<Terminal> actualValues = DoLexicalAnalysis(testValue);
+        // Assert
+        CompareValues(actualValues, expectedValues);
+
+        PrintTerminals(actualValues);
+    }
+
+    @Test
+    public void FinirAvecEspace() {
+        // Arrange
+        String testValue = "Al_a () +    ";
+        System.out.println(testValue);
+        List<String> expectedValues = Arrays.asList("Al_a", "(", ")","+");
+        // Act
+        List<Terminal> actualValues = DoLexicalAnalysis(testValue);
+        // Assert
+        CompareValues(actualValues, expectedValues);
+
+        PrintTerminals(actualValues);
+    }
+
+    @Test
+    public void Finir1Chiffre() {
+        // Arrange
+        String testValue = "5*5";
+        System.out.println(testValue);
+        List<String> expectedValues = Arrays.asList("5", "*", "5");
+        // Act
+        List<Terminal> actualValues = DoLexicalAnalysis(testValue);
+        // Assert
+        CompareValues(actualValues, expectedValues);
+
+        PrintTerminals(actualValues);
+    }
+
+    @Test
+    public void Finir1CaratereIndicateur() {
+        // Arrange
+        String testValue = "5*A";
+        System.out.println(testValue);
+        List<String> expectedValues = Arrays.asList("5", "*", "A");
+        // Act
+        List<Terminal> actualValues = DoLexicalAnalysis(testValue);
+        // Assert
+        CompareValues(actualValues, expectedValues);
+
+        PrintTerminals(actualValues);
+    }
+
+    @Test
+    public void FinirOperateur() {
+        // Arrange
+        String testValue = "5*";
+        System.out.println(testValue);
+        List<String> expectedValues = Arrays.asList("5", "*");
         // Act
         List<Terminal> actualValues = DoLexicalAnalysis(testValue);
         // Assert

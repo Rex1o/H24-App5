@@ -1,37 +1,52 @@
-/** @author Ahmed Khoumsi */
+/**
+ * @author Ahmed Khoumsi
+ */
 
-/** Cette classe effectue l'analyse syntaxique
+/**
+ * Cette classe effectue l'analyse syntaxique
  */
 public class DescenteRecursive {
-
-    // Attributs
-    private String data;
-    private AnalLex al;
+    private final AnalLex al;
+    private Terminal previousTerminal;
     private Terminal currentTerminal;
+    private Terminal.Type currentType;
 
-    /** Constructeur de DescenteRecursive :
-     - recoit en argument le nom du fichier contenant l'expression a analyser
-     - pour l'initalisation d'attribut(s)
-     */
-    public DescenteRecursive(String in) {
-        Reader r = new Reader(in);
-        this.data = r.toString();
-        this.al = new AnalLex(data);
+    private void terminal(Terminal.Type attendu) {
+        previousTerminal = currentTerminal;
+        if (currentTerminal.getType() == attendu) {
+            currentTerminal = al.prochainTerminal();
+            currentType = currentTerminal.getType();
+        } else
+            throw new ErreurSynth(currentTerminal);
     }
 
 
-    /** AnalSynt() effectue l'analyse syntaxique et construit l'AST.
-     *    Elle retourne une reference sur la racine de l'AST construit
+    /**
+     * Constructeur de DescenteRecursive :
+     * - recoit en argument le nom du fichier contenant l'expression a analyser
+     * - pour l'initalisation d'attribut(s)
      */
-    public ElemAST AnalSynt( ) {
-
-        ElemAST arbre = null;
-        if(al.resteTerminal()){
-            currentTerminal = al.prochainTerminal();
-            arbre = E();
+    public DescenteRecursive(String data, boolean readFromFile) {
+        if (readFromFile) {
+            Reader r = new Reader(data);
+            data = r.toString();
         }
+        this.al = new AnalLex(data);
+    }
 
-        return arbre;
+    /**
+     * AnalSynt() effectue l'analyse syntaxique et construit l'AST.
+     * Elle retourne une reference sur la racine de l'AST construit
+     */
+    public ElemAST AnalSynt() {
+        ElemAST racine = null;
+        if (al.resteTerminal()) {
+            currentTerminal = al.prochainTerminal(); // Lire le premier terminal
+            currentType = currentTerminal.getType();
+            racine = E();
+        } else
+            throw new ErreurSynth("Aucun terminal a analyser");
+        return racine;
     }
 
 
@@ -39,100 +54,53 @@ public class DescenteRecursive {
 // ...
 // ...
 
-    public ElemAST E(){
-        ElemAST n1 = T();
-
-        // +-
-        if(currentTerminal.getType() == Terminal.Type.Addition ||
-                currentTerminal.getType() == Terminal.Type.Soustraction){
-            Terminal operator = currentTerminal;
-            if(al.resteTerminal()) {
-                currentTerminal = al.prochainTerminal();
+    public ElemAST E() {
+        ElemAST gauche = T();
+        return switch (currentType) {
+            case Terminal.Type.Addition -> {
+                terminal(Terminal.Type.Addition);
+                yield new NoeudAST(previousTerminal, gauche, E());
             }
-            else{
-                throw new ErreurSynth("Operande manquante dans l'expression : (" + n1.LectAST() + ")" + currentTerminal.getChaine() + "[Manquant]");
+            case Terminal.Type.Soustraction -> {
+                terminal(Terminal.Type.Soustraction);
+                yield new NoeudAST(previousTerminal, gauche, E());
             }
-            ElemAST n2 = E();
-            n1 = new NoeudAST(operator, n1, n2);
-        }
-        else{
-            throw new ErreurSynth("Deux operandes de suite ne sont pas valide : " + n1.LectAST() + " " + currentTerminal.getChaine());
-        }
-
-        return n1;
+            default -> gauche; // Dans le cas ou l'operation de contient aucune partie de droite
+        };
     }
 
-    public ElemAST T(){
-        ElemAST n1 = F();
-
-        // * /
-        if(currentTerminal.getType() == Terminal.Type.Division ||
-                currentTerminal.getType() == Terminal.Type.Multiplication){
-            Terminal operator = currentTerminal;
-            if(al.resteTerminal()) {
-                currentTerminal = al.prochainTerminal();
+    public ElemAST T() {
+        ElemAST gauche = F();
+        return switch (currentType) {
+            case Terminal.Type.Multiplication -> {
+                terminal(Terminal.Type.Multiplication);
+                yield new NoeudAST(previousTerminal, gauche, T());
             }
-            else{
-                throw new ErreurSynth("Operande manquante dans l'expression : (" + n1.LectAST() + ")" + currentTerminal.getChaine() + "[Manquant]");
+            case Terminal.Type.Division -> {
+                terminal(Terminal.Type.Division);
+                yield new NoeudAST(previousTerminal, gauche, T());
             }
-            ElemAST n2 = T();
-            n1 = new NoeudAST(operator, n1, n2);
-        }
-        // +- )
-        else if(currentTerminal.getType() == Terminal.Type.Addition ||
-                currentTerminal.getType() == Terminal.Type.Soustraction ||
-                currentTerminal.getType() == Terminal.Type.ParentheseFermante){
-            return n1;
-        }
-        else{
-            throw new ErreurSynth("Deux operandes de suite ne sont pas valide : " + n1.LectAST() + " " + currentTerminal.getChaine());
-        }
-
-        return n1;
+            default -> gauche;
+        };
     }
 
-    public ElemAST F(){
-        ElemAST n;
-        if(currentTerminal.getType() == Terminal.Type.Nombre ||
-                currentTerminal.getType() == Terminal.Type.Identificateur){
-            n = new FeuilleAST(currentTerminal);
-            if(al.resteTerminal()){
-                currentTerminal = al.prochainTerminal();
-            }
+    public ElemAST F() {
+        switch (currentType) {
+            case Terminal.Type.Identificateur:
+                terminal(Terminal.Type.Identificateur);
+                return new FeuilleAST(previousTerminal);
+            case Terminal.Type.Nombre:
+                terminal(Terminal.Type.Nombre);
+                return new FeuilleAST(previousTerminal);
+            case Terminal.Type.ParentheseOuvrante:
+                terminal(Terminal.Type.ParentheseOuvrante);
+                ElemAST elem = E();
+                terminal(Terminal.Type.ParentheseFermante);
+                return elem;
+            default:
+                throw new ErreurSynth(previousTerminal);
         }
-        else if(currentTerminal.getChaine().equals("(")){
-            if(al.resteTerminal()) {
-                currentTerminal = al.prochainTerminal();
-            }
-            else{
-                throw new ErreurSynth("Paranthese ouvrante sans etre ferme");
-            }
-            n = E();
-            if(currentTerminal.getChaine().equals(")")){
-                if(al.resteTerminal()) {
-                    currentTerminal = al.prochainTerminal();
-                }
-            }
-            else{
-                throw new ErreurSynth(") manquante");
-            }
-        }
-        else{
-            throw new ErreurSynth("Erreur de syntaxe : Absence de ( ou d'un identificateur au traitement de : " + currentTerminal.getChaine());
-        }
-
-        return n;
     }
-
-
-
-    /** ErreurSynt() envoie un message d'erreur syntaxique
-     */
-    public void ErreurSynt(String s)
-    {
-        throw new ErreurSynth(s);
-    }
-
 
 
     //Methode principale a lancer pour tester l'analyseur syntaxique
@@ -141,19 +109,21 @@ public class DescenteRecursive {
         String toWriteEval = "";
 
         System.out.println("Debut d'analyse syntaxique");
-        if (args.length == 0){
-            args = new String [2];
+        DescenteRecursive dr;
+        if (args.length == 0) {
+            args = new String[2];
             args[0] = "ExpArith.txt";
             args[1] = "ResultatSyntaxique.txt";
+
         }
-        DescenteRecursive dr = new DescenteRecursive(args[0]);
+        dr = new DescenteRecursive(args[0], true);
         try {
             ElemAST RacineAST = dr.AnalSynt();
             toWriteLect += "Lecture de l'AST trouve : " + RacineAST.LectAST() + "\n";
             System.out.println(toWriteLect);
             toWriteEval += "Evaluation de l'AST trouve : " + RacineAST.EvalAST() + "\n";
             System.out.println(toWriteEval);
-            Writer w = new Writer(args[1],toWriteLect+toWriteEval); // Ecriture de toWrite
+            Writer w = new Writer(args[1], toWriteLect + toWriteEval); // Ecriture de toWrite
             // dans fichier args[1]
         } catch (Exception e) {
             System.out.println(e);
@@ -162,5 +132,4 @@ public class DescenteRecursive {
         }
         System.out.println("Analyse syntaxique terminee");
     }
-
 }

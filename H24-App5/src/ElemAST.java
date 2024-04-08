@@ -4,6 +4,7 @@
  */
 public abstract class ElemAST {
 
+    protected Terminal terminal;
 
     /** Evaluation d'AST
      */
@@ -20,5 +21,7 @@ public abstract class ElemAST {
     public void ErreurEvalAST(String s) {
         System.out.println(s);
     }
+
+    public abstract String PostFix();
 
 }

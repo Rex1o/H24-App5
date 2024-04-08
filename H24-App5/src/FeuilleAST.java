@@ -4,9 +4,6 @@
  */
 public class FeuilleAST extends ElemAST {
 
-    // Attribut(s)
-    private Terminal terminal;
-
     /**Constructeur pour l'initialisation d'attribut(s)
      */
     public FeuilleAST(Terminal terminal) {  // avec arguments
@@ -17,21 +14,23 @@ public class FeuilleAST extends ElemAST {
     /** Evaluation de feuille d'AST
      */
     public int EvalAST( ) {
-
-        String regex = "[0-9]+";
-
-        if(!this.terminal.chaine.matches(regex)){
-            ErreurEvalAST("Erreur : La feuille contient une variable/autre chose qu'un nombre");
+        if(this.terminal.getType() == Terminal.Type.Identificateur){
+            ErreurEvalAST("Erreur : L'équation contient un Identificateur, elle ne peut donc pas être faite");
         }
 
-        return Integer.valueOf(this.terminal.chaine);
+        return Integer.parseInt(this.terminal.getChaine());
     }
 
 
     /** Lecture de chaine de caracteres correspondant a la feuille d'AST
      */
     public String LectAST( ) {
-        return this.terminal.chaine;
+        return this.terminal.getChaine();
+    }
+
+    @Override
+    public String PostFix() {
+        return terminal.getChaine();
     }
 
 }

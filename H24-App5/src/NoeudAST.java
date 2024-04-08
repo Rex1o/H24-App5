@@ -5,8 +5,6 @@
 public class NoeudAST extends ElemAST {
 
     // Attributs
-
-    private Terminal terminal;
     private ElemAST gauche;
     private ElemAST droit;
 
@@ -22,20 +20,26 @@ public class NoeudAST extends ElemAST {
     /** Evaluation de noeud d'AST
      */
     public int EvalAST( ) {
-        int result = 0;
-        switch(terminal.chaine) {
-            case "+":
-                result = gauche.EvalAST() + droit.EvalAST();
-                break;
-        }
-        return result;
+        return switch(terminal.getType()) {
+            case Identificateur -> throw new ErreurEval("Un noeud ne devrait pas être un identificateur");
+            case Nombre -> throw new ErreurEval("Un noeud ne devrait pas être un nombre");
+            case Addition -> gauche.EvalAST() + droit.EvalAST();
+            case Division -> gauche.EvalAST() / droit.EvalAST();
+            case Multiplication -> gauche.EvalAST() * droit.EvalAST();
+            case Soustraction -> gauche.EvalAST() - droit.EvalAST();
+            case ParentheseOuvrante -> throw new ErreurEval("Un noeud ne devrait pas être un parenthèse");
+            case ParentheseFermante -> throw new ErreurEval("Un noeud ne devrait pas être un parenthèse");
+        };
     }
 
+    public String PostFix(){
+        return STR."\{gauche.PostFix()} \{droit.PostFix()} \{terminal.getChaine()}";
+    }
 
     /** Lecture de noeud d'AST
      */
     public String LectAST( ) {
-        return "(" + gauche.LectAST() + terminal.chaine + droit.LectAST() + ")";
+        return "(" + gauche.LectAST() + terminal.getChaine() + droit.LectAST() + ")";
     }
 
 }

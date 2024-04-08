@@ -49,7 +49,7 @@ public class Terminal {
     private static Type getOperators (char c){
         return switch (c) {
             case '+' -> Type.Addition;
-            case '-' -> Type.Soustraction;
+            case '-', '–' -> Type.Soustraction;
             case '/' -> Type.Division;
             case '*' -> Type.Multiplication;
             case '(' -> Type.ParentheseOuvrante;
